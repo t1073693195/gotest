@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GOTI围棋趣味测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+        
+        body {
+            /* 暖米色柔和渐变背景，无棋盘元素 */
+            background: linear-gradient(135deg, #f8f5f0 0%, #e8e4dc 100%);
+            min-height: 100vh;
+            padding: 20px 15px;
+        }
+        
+        .container {
+            max-width: 550px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 16px;
+            padding: 35px 25px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2d2d2d;
+            margin-bottom: 40px;
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: 2px;
+        }
+        
+        .question {
+            margin-bottom: 30px;
+            display: none;
+        }
+        
+        .question.active {
+            display: block;
+        }
+        
+        .question-title {
+            font-size: 19px;
+            font-weight: 500;
+            margin-bottom: 25px;
+            color: #333;
+            line-height: 1.6;
+            padding-left: 5px;
+        }
+        
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        
+        /* 核心：棋子按钮样式 */
+        .option {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 14px 18px;
+            background-color: #faf9f7;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #444;
+            position: relative;
+        }
+        
+        /* 黑白棋子图标（伪元素实现） */
+        .option::before {
+            content: "";
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            transition: transform 0.2s ease;
+        }
+        
+        /* 黑棋样式（A、C选项） */
+        .option:nth-child(1)::before,
+        .option:nth-child(3)::before {
+            background: linear-gradient(145deg, #555 0%, #1a1a1a 100%);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3), inset 0 -2px 4px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.1);
+        }
+        
+        /* 白棋样式（B、D选项） */
+        .option:nth-child(2)::before,
+        .option:nth-child(4)::before {
+            background: linear-gradient(145deg, #ffffff 0%, #e0e0e0 100%);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15), inset 0 -2px 4px rgba(0,0,0,0.1), inset 0 2px 4px rgba(255,255,255,0.8);
+        }
+        
+        /* 鼠标悬停效果 */
+        .option:hover {
+            border-color: #8b7355;
+            background-color: #f5f2ed;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        
+        /* 点击时棋子放大效果 */
+        .option:active::before {
+            transform: scale(1.15);
+        }
+        
+        .result {
+            display: none;
+            text-align: center;
+            padding: 20px 0;
+        }
+        
+        .result h2 {
+            font-size: 32px;
+            margin-bottom: 25px;
+            color: #2d2d2d;
+            font-weight: 600;
+        }
+        
+        .result p {
+            font-size: 18px;
+            line-height: 1.8;
+            color: #555;
+            margin-bottom: 30px;
+            text-align: left;
+            padding: 0 10px;
+        }
+        
+        /* 分享提示样式 */
+        .share-tip {
+            background-color: #f5f2ed;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 15px;
+            color: #6d5a43;
+            line-height: 1.6;
+        }
+        
+        /* 公众号关注引导样式 */
+        .follow-guide {
+            background-color: #f0f7ff;
+            border-radius: 10px;
+            padding: 18px;
+            margin-bottom: 35px;
+            font-size: 15px;
+            color: #357abd;
+            line-height: 1.6;
+        }
+        
+        .follow-guide strong {
+            color: #2d5f99;
+            font-size: 16px;
+        }
+        
+        .restart-btn {
+            padding: 14px 40px;
+            background: linear-gradient(135deg, #8b7355 0%, #6d5a43 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 17px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(139,115,85,0.3);
+        }
+        
+        .restart-btn:hover {
+            background: linear-gradient(135deg, #9d8363 0%, #7d6a52 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(139,115,85,0.4);
+        }
+        
+        /* 移动端适配优化 */
+        @media (max-width: 480px) {
+            .container {
+                padding: 25px 20px;
+            }
+            
+            h1 {
+                font-size: 24px;
+                margin-bottom: 30px;
+            }
+            
+            .question-title {
+                font-size: 17px;
+            }
+            
+            .option {
+                font-size: 15px;
+                padding: 12px 15px;
+                gap: 12px;
+            }
+            
+            .option::before {
+                width: 36px;
+                height: 36px;
+            }
+            
+            .result h2 {
+                font-size: 28px;
+            }
+            
+            .result p {
+                font-size: 16px;
+            }
+            
+            .share-tip, .follow-guide {
+                font-size: 14px;
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>GOTI围棋趣味测试</h1>
+        
+        <!-- 第1题 -->
+        <div class="question active" id="q1">
+            <div class="question-title">1、走路看到地砖方格，你的第一反应是？</div>
+            <div class="options">
+                <div class="option" data-score="4">A. 严格按 "单脚跳一格、不踩线" 的规则玩，错一步就要从头来</div>
+                <div class="option" data-score="3">B. 拉着爸妈/小伙伴，一起发明个新规则边玩边闹，主打一个热闹</div>
+                <div class="option" data-score="2">C. 喊着 "比赛谁先跳到那头！"，必须争个第一</div>
+                <div class="option" data-score="1">D. 把方格当成闯关地图，自己编个探险剧情，想怎么走就怎么走</div>
+            </div>
+        </div>
+        
+        <!-- 第2题 -->
+        <div class="question" id="q2">
+            <div class="question-title">2、和小朋友玩游戏输了，你会？</div>
+            <div class="options">
+                <div class="option" data-score="4">A. 皱着眉不说话，拉着对方立刻再来一局，非要把场子找回来</div>
+                <div class="option" data-score="3">B. 哈哈一笑说 "你也太厉害了！"，转头就拉着对方玩新游戏，输赢根本不往心里去</div>
+                <div class="option" data-score="2">C. 撅嘴两分钟，立刻拽着对方换个自己擅长的游戏，必须赢回来一局</div>
+                <div class="option" data-score="1">D. 眼睛一亮说 "你这招太牛了！教教我呗"，转头就研究怎么用奇招反杀</div>
+            </div>
+        </div>
+        
+        <!-- 第3题 -->
+        <div class="question" id="q3">
+            <div class="question-title">3、拼 100 片拼图，你会怎么拼？</div>
+            <div class="options">
+                <div class="option" data-score="4">A. 先分色块、找边框，按顺序一片一片拼，不拼完绝不干别的</div>
+                <div class="option" data-score="3">B. 拼到哪算哪，拼累了就喊爸妈/朋友一起搭把手，主打一个开心就好</div>
+                <div class="option" data-score="2">C. 先把好拼的边框、大色块全搞定，难的地方直接喊人帮忙，主打一个效率拉满</div>
+                <div class="option" data-score="1">D. 不看图纸，自己瞎拼，最后拼出个和原图完全不一样的 "创意限定版"</div>
+            </div>
+        </div>
+        
+        <!-- 第4题 -->
+        <div class="question" id="q4">
+            <div class="question-title">4、下棋时被对手吃了一大块棋，你会？</div>
+            <div class="options">
+                <div class="option" data-score="4">A. 一言不发盯着棋盘，死咬着找翻盘的机会，不到最后一步绝不认输</div>
+                <div class="option" data-score="3">B. 瞪大眼睛惊呼 "你这手也太帅了吧！"，然后开开心心接着下</div>
+                <div class="option" data-score="2">C. 一拍大腿喊 "哎呀算错了！"，立刻加快落子速度，非要把损失找回来</div>
+                <div class="option" data-score="1">D. 这块直接不要了，转头在棋盘另一边围出更大的地盘，主打一个出其不意</div>
+            </div>
+        </div>
+        
+        <!-- 第5题 -->
+        <div class="question" id="q5">
+            <div class="question-title">5、周末在家，你更愿意？</div>
+            <div class="options">
+                <div class="option" data-score="4">A. 安安静静玩拼图、搭积木或其他游戏，自己一个人能沉浸式玩一下午</div>
+                <div class="option" data-score="3">B. 约一堆小朋友来家里，自己当组织者带大家玩各种游戏</div>
+                <div class="option" data-score="2">C. 玩赛车、比拼类的竞技游戏，必须拿第一才过瘾</div>
+                <div class="option" data-score="1">D. 玩角色扮演、编童话故事，脑子里的剧情天马行空</div>
+            </div>
+        </div>
+        
+        <!-- 第6题 -->
+        <div class="question" id="q6">
+            <div class="question-title">6、学新的围棋知识点，你习惯？</div>
+            <div class="options">
+                <div class="option" data-score="4">A. 上一个知识点没完全吃透，绝对不学下一个，一步一步稳扎稳打</div>
+                <div class="option" data-score="3">B. 边玩边学，还给枯燥的学习编顺口溜，主打一个快乐学棋</div>
+                <div class="option" data-score="2">C. 快速学完，直接上手实战练，在对局里找感觉</div>
+                <div class="option" data-score="1">D. 总问各种奇奇怪怪的问题，不按课本的思路走，非要试试 "骗招" 行不行</div>
+            </div>
+        </div>
+        
+        <!-- 第7题 -->
+        <div class="question" id="q7">
+            <div class="question-title">7、吃饭或者零食的时候，你会？</div>
+            <div class="options">
+                <div class="option" data-score="4">A. 先吃不爱吃的，把最好吃的留到最后，慢慢享用</div>
+                <div class="option" data-score="3">B. 全部分给身边的人一起吃，自己少吃点也没关系，分享最快乐</div>
+                <div class="option" data-score="2">C. 先把最好吃的全吃完，剩下的随缘吃</div>
+                <div class="option" data-score="1">D. 拿吃的摆各种造型，比如用饼干搭房子、用饭捏饭团，玩够了再吃</div>
+            </div>
+        </div>
+        
+        <!-- 第8题 -->
+        <div class="question" id="q8">
+            <div class="question-title">8、玩躲猫猫，你更擅长？</div>
+            <div class="options">
+                <div class="option" data-score="4">A. 找一个最隐蔽的角落藏到底，没人找到绝对不出来</div>
+                <div class="option" data-score="3">B. 藏两分钟就忍不住笑出声，还会故意制造动静逗找的人</div>
+                <div class="option" data-score="2">C. 不停换地方藏，跟找的人打游击，主打一个灵活拉扯</div>
+                <div class="option" data-score="1">D. 躲在所有人都想不到的地方，主打一个出其不意</div>
+            </div>
+        </div>
+        
+        <!-- 第9题 -->
+        <div class="question" id="q9">
+            <div class="question-title">9、看别人下棋时，你会？</div>
+            <div class="options">
+                <div class="option" data-score="4">A. 安安静静在旁边看完全程，全程不插嘴</div>
+                <div class="option" data-score="3">B. 全程激情围观，谁下出好棋比当事人还激动</div>
+                <div class="option" data-score="2">C. 忍不住在旁边支招，比下棋的人还着急</div>
+                <div class="option" data-score="1">D. 看完之后立刻说 "我想到了一个更厉害的走法！"</div>
+            </div>
+        </div>
+        
+        <!-- 第10题 -->
+        <div class="question" id="q10">
+            <div class="question-title">10、拿到新玩具，你会？</div>
+            <div class="options">
+                <div class="option" data-score="4">A. 先仔细看说明书，搞懂所有玩法再玩</div>
+                <div class="option" data-score="3">B. 立刻拉着全家人一起玩，还会发明各种新玩法</div>
+                <div class="option" data-score="2">C. 立刻拆开玩，遇到不会的再问家长</div>
+                <div class="option" data-score="1">D. 不按说明书玩，开发出别人想不到的隐藏玩法</div>
+            </div>
+        </div>
+        
+        <!-- 结果页 -->
+        <div class="result" id="result">
+            <h2 id="result-title"></h2>
+            <p id="result-desc"></p>
+            
+            <!-- 分享提示 -->
+            <div class="share-tip">
+                ✨ 分享给你的棋友，看看他们是围棋界的哪位传奇棋手吧！
+            </div>
+            
+            <!-- 公众号关注引导 -->
+            <div class="follow-guide">
+                👉 关注公众号 <strong>津海围棋</strong><br>
+                获取更多围棋趣味内容、教学资源和线下活动信息
+            </div>
+            
+            <button class="restart-btn" onclick="restart()">再测一次</button>
+        </div>
+    </div>
+
+    <script>
+        let currentQuestion = 1;
+        let totalScore = 0;
+        const totalQuestions = 10;
+        
+        // 给所有选项添加点击事件
+        document.querySelectorAll('.option').forEach(option => {
+            option.addEventListener('click', function() {
+                // 累加分数
+                totalScore += parseInt(this.getAttribute('data-score'));
+                
+                // 隐藏当前题目
+                document.getElementById(`q${currentQuestion}`).classList.remove('active');
+                
+                // 如果还有下一题，显示下一题；否则显示结果
+                if (currentQuestion < totalQuestions) {
+                    currentQuestion++;
+                    document.getElementById(`q${currentQuestion}`).classList.add('active');
+                } else {
+                    showResult();
+                }
+            });
+        });
+        
+        // 显示结果
+        function showResult() {
+            const resultTitle = document.getElementById('result-title');
+            const resultDesc = document.getElementById('result-desc');
+            
+            if (totalScore >= 32 && totalScore <= 40) {
+                resultTitle.textContent = "李昌镐";
+                resultDesc.textContent = "妥妥的棋盘定海神针！天生坐得住、沉得下心，做事严谨有条理，下棋一步一个脚印，不到最后一刻绝不放松。就像 \"石佛\" 李昌镐，看似不动声色，实则步步为营，极致的耐心和专注力，就是你在棋盘上最大的杀手锏！";
+            } else if (totalScore >= 24 && totalScore <= 31) {
+                resultTitle.textContent = "战鹰";
+                resultDesc.textContent = "全网爆火的快乐围棋代言人！主打一个 \"输赢看淡，开心就好\"，社牛属性拉满，会整活、爱分享，走到哪都是气氛组担当。下棋从来不是为了卷输赢，能在棋盘上找到快乐，交到好朋友，就是最大的胜利！谁能拒绝会带来快乐的围棋小太阳呢～";
+            } else if (totalScore >= 16 && totalScore <= 23) {
+                resultTitle.textContent = "柯洁";
+                resultDesc.textContent = "棋盘上的闪电快刀！反应快、脑子活，胜负心强但心态调整也快，棋风犀利又有激情。就像柯洁敢打敢冲，越挫越勇，虽然偶尔会因为粗心翻车，但输了立刻就要再来一局，骨子里的好胜心，就是你棋力进步的最大动力！";
+            } else if (totalScore >= 10 && totalScore <= 15) {
+                resultTitle.textContent = "李世石";
+                resultDesc.textContent = "不按常理出牌的棋坛脑洞王！脑子里全是奇思妙想，总能下出让人拍案叫绝的 \"神之一手\"。就像传奇棋手李世石，从来不会被规则困住，你永远猜不到TA下一步会走什么，跟这种孩子下棋永远不会无聊，天马行空的想象力，就是棋盘上最厉害的武器！";
+            }
+            
+            document.getElementById('result').style.display = 'block';
+        }
+        
+        // 重新开始
+        function restart() {
+            currentQuestion = 1;
+            totalScore = 0;
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('q1').classList.add('active');
+        }
+    </script>
+</body>
+</html>
